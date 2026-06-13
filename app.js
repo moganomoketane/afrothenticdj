@@ -12,14 +12,12 @@ document.addEventListener('mousemove', e => {
   mouseY = e.clientY;
   cursor.style.left = mouseX + 'px';
   cursor.style.top  = mouseY + 'px';
-  // trail follows slightly behind
   setTimeout(() => {
     cursorTrail.style.left = mouseX + 'px';
     cursorTrail.style.top  = mouseY + 'px';
   }, 80);
 });
 
-// expand cursor on hover
 document.querySelectorAll('a, button, .mix-row, .gig-item, .gallery-strip__item, .gallery-arrow, .lightbox__close').forEach(el => {
   el.addEventListener('mouseenter', () => cursor.classList.add('expanded'));
   el.addEventListener('mouseleave', () => cursor.classList.remove('expanded'));
@@ -55,8 +53,8 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && drawerOpen
 (function heroCanvas() {
   const canvas = document.getElementById('heroCanvas');
   if (!canvas) return;
-  const ctx    = canvas.getContext('2d');
-  let W, H, particles = [], animId;
+  const ctx = canvas.getContext('2d');
+  let W, H, particles = [];
 
   function resize() {
     W = canvas.width  = window.innerWidth;
@@ -80,7 +78,6 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && drawerOpen
 
   function draw() {
     ctx.clearRect(0, 0, W, H);
-    // Deep radial glow — amber warmth bottom-right
     const grad = ctx.createRadialGradient(W * 0.75, H * 0.6, 0, W * 0.75, H * 0.6, W * 0.7);
     grad.addColorStop(0,   'rgba(232,133,10,0.07)');
     grad.addColorStop(0.5, 'rgba(140,60,0,0.04)');
@@ -88,7 +85,6 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && drawerOpen
     ctx.fillStyle = grad;
     ctx.fillRect(0, 0, W, H);
 
-    // Particles
     particles.forEach(p => {
       ctx.beginPath();
       ctx.arc(p.x, p.y, p.r, 0, Math.PI * 2);
@@ -100,24 +96,16 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && drawerOpen
       if (p.y < 0 || p.y > H) p.dy *= -1;
     });
 
-    // Subtle grid lines (low opacity)
     ctx.strokeStyle = 'rgba(255,255,255,0.015)';
     ctx.lineWidth = 1;
     const spacing = 80;
     for (let x = 0; x < W; x += spacing) {
-      ctx.beginPath();
-      ctx.moveTo(x, 0);
-      ctx.lineTo(x, H);
-      ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke();
     }
     for (let y = 0; y < H; y += spacing) {
-      ctx.beginPath();
-      ctx.moveTo(0, y);
-      ctx.lineTo(W, y);
-      ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(W, y); ctx.stroke();
     }
-
-    animId = requestAnimationFrame(draw);
+    requestAnimationFrame(draw);
   }
 
   window.addEventListener('resize', () => { resize(); createParticles(); });
@@ -125,35 +113,6 @@ document.addEventListener('keydown', e => { if (e.key === 'Escape' && drawerOpen
   createParticles();
   draw();
 })();
-
-/* ---- SPLIT TEXT ANIMATION (used in non-hero sections) ---- */
-function splitAndAnimate() {
-  const els = document.querySelectorAll('.split-text');
-  els.forEach(el => {
-    const delay = parseInt(el.dataset.delay || 0);
-    if (el.querySelector('span')) {
-      el.querySelectorAll('span').forEach((span, si) => {
-        const inner = span.textContent;
-        span.innerHTML = [...inner].map((ch, i) =>
-          ch === ' ' ? ' ' : `<span class="char" style="transition-delay:${delay + si*100 + i*35}ms">${ch}</span>`
-        ).join('');
-      });
-    } else {
-      el.innerHTML = [...el.textContent].map((ch, i) =>
-        ch === ' ' ? ' ' : `<span class="char" style="transition-delay:${delay + i*40}ms">${ch}</span>`
-      ).join('');
-    }
-    setTimeout(() => el.classList.add('animated'), 100);
-  });
-}
-// Only run split-text on about/mixes headings, not hero (hero uses CSS keyframe animations)
-document.querySelectorAll('.about .split-text, .mixes .split-text').forEach(el => {
-  const delay = parseInt(el.dataset.delay || 0);
-  el.innerHTML = [...el.textContent].map((ch, i) =>
-    ch === ' ' ? ' ' : `<span class="char" style="transition-delay:${delay + i*40}ms">${ch}</span>`
-  ).join('');
-  setTimeout(() => el.classList.add('animated'), 100);
-});
 
 /* ---- INTERSECTION OBSERVER: reveal ---- */
 const revealObserver = new IntersectionObserver((entries) => {
@@ -180,29 +139,6 @@ const gigObserver = new IntersectionObserver((entries) => {
 
 document.querySelectorAll('.gig-item').forEach(el => gigObserver.observe(el));
 
-/* ---- COUNTER ANIMATION ---- */
-const counterObserver = new IntersectionObserver((entries) => {
-  entries.forEach(e => {
-    if (e.isIntersecting) {
-      const el     = e.target;
-      const target = parseInt(el.dataset.target);
-      const duration = 1800;
-      const start  = performance.now();
-      function tick(now) {
-        const t = Math.min((now - start) / duration, 1);
-        const ease = 1 - Math.pow(1 - t, 4);
-        el.textContent = Math.round(ease * target);
-        if (t < 1) requestAnimationFrame(tick);
-        else el.textContent = target;
-      }
-      requestAnimationFrame(tick);
-      counterObserver.unobserve(el);
-    }
-  });
-}, { threshold: 0.5 });
-
-document.querySelectorAll('.counter').forEach(el => counterObserver.observe(el));
-
 /* ---- GIGS TABS ---- */
 document.querySelectorAll('.gigs__tab').forEach(tab => {
   tab.addEventListener('click', () => {
@@ -218,43 +154,33 @@ document.querySelectorAll('.gigs__tab').forEach(tab => {
 document.querySelectorAll('.magnetic').forEach(el => {
   el.addEventListener('mousemove', e => {
     const rect = el.getBoundingClientRect();
-    const cx   = rect.left + rect.width  / 2;
-    const cy   = rect.top  + rect.height / 2;
-    const dx   = (e.clientX - cx) * 0.35;
-    const dy   = (e.clientY - cy) * 0.35;
+    const dx = (e.clientX - (rect.left + rect.width  / 2)) * 0.35;
+    const dy = (e.clientY - (rect.top  + rect.height / 2)) * 0.35;
     el.style.transform = `translate(${dx}px, ${dy}px)`;
   });
-  el.addEventListener('mouseleave', () => {
-    el.style.transform = '';
-  });
+  el.addEventListener('mouseleave', () => { el.style.transform = ''; });
 });
 
 /* ---- 3D TILT CARDS ---- */
 document.querySelectorAll('.tilt-card').forEach(card => {
   card.addEventListener('mousemove', e => {
     const rect = card.getBoundingClientRect();
-    const cx   = rect.left + rect.width  / 2;
-    const cy   = rect.top  + rect.height / 2;
-    const rx   = ((e.clientY - cy) / (rect.height / 2)) * -8;
-    const ry   = ((e.clientX - cx) / (rect.width  / 2)) *  8;
+    const rx = ((e.clientY - (rect.top  + rect.height / 2)) / (rect.height / 2)) * -8;
+    const ry = ((e.clientX - (rect.left + rect.width  / 2)) / (rect.width  / 2)) *  8;
     card.style.transform = `perspective(800px) rotateX(${rx}deg) rotateY(${ry}deg) scale3d(1.02,1.02,1.02)`;
   });
-  card.addEventListener('mouseleave', () => {
-    card.style.transform = '';
-  });
+  card.addEventListener('mouseleave', () => { card.style.transform = ''; });
 });
 
 /* ---- DRAGGABLE GALLERY STRIP ---- */
 (function dragGallery() {
   const strip = document.getElementById('galleryStrip');
   if (!strip) return;
-
   let isDown = false, startX = 0, scrollLeft = 0, didDrag = false;
 
   strip.addEventListener('mousedown', e => {
-    isDown   = true;
-    didDrag  = false;
-    startX   = e.pageX - strip.offsetLeft;
+    isDown = true; didDrag = false;
+    startX = e.pageX - strip.offsetLeft;
     scrollLeft = strip.scrollLeft;
   });
   strip.addEventListener('mouseleave', () => { isDown = false; });
@@ -262,23 +188,20 @@ document.querySelectorAll('.tilt-card').forEach(card => {
   strip.addEventListener('mousemove', e => {
     if (!isDown) return;
     e.preventDefault();
-    const x    = e.pageX - strip.offsetLeft;
-    const walk = (x - startX) * 1.6;
+    const walk = (e.pageX - strip.offsetLeft - startX) * 1.6;
     if (Math.abs(walk) > 4) didDrag = true;
     strip.scrollLeft = scrollLeft - walk;
   });
 
   let touchStartX = 0, touchScrollLeft = 0;
   strip.addEventListener('touchstart', e => {
-    touchStartX    = e.touches[0].pageX;
+    touchStartX = e.touches[0].pageX;
     touchScrollLeft = strip.scrollLeft;
   }, { passive: true });
   strip.addEventListener('touchmove', e => {
-    const dx = touchStartX - e.touches[0].pageX;
-    strip.scrollLeft = touchScrollLeft + dx;
+    strip.scrollLeft = touchScrollLeft + (touchStartX - e.touches[0].pageX);
   }, { passive: true });
 
-  // Expose drag state so lightbox click handler can check it
   strip._didDrag = () => didDrag;
 })();
 
@@ -307,7 +230,6 @@ document.querySelectorAll('.tilt-card').forEach(card => {
     lightbox.classList.add('open');
     document.body.style.overflow = 'hidden';
   }
-
   function close() {
     lightbox.classList.remove('open');
     document.body.style.overflow = '';
@@ -333,8 +255,7 @@ document.querySelectorAll('.tilt-card').forEach(card => {
 const heroPhoto = document.getElementById('heroPhoto');
 window.addEventListener('scroll', () => {
   if (!heroPhoto) return;
-  const y = window.scrollY;
-  heroPhoto.style.transform = `translateY(${y * 0.25}px)`;
+  heroPhoto.style.transform = `translateY(${window.scrollY * 0.25}px)`;
 }, { passive: true });
 
 /* ---- PROMOTER KIT TABS ---- */
@@ -373,7 +294,7 @@ window.addEventListener('scroll', () => {
       }, 350);
     } else {
       input.classList.remove('pk-gate__input--error');
-      void input.offsetWidth; // retrigger animation
+      void input.offsetWidth;
       input.classList.add('pk-gate__input--error');
       errorEl.textContent = 'Incorrect code. Contact DJ Afrothentic to request access.';
       input.value = '';
@@ -385,7 +306,7 @@ window.addEventListener('scroll', () => {
     downloads.hidden = true;
     gate.hidden      = false;
     gate.classList.remove('pk-gate--unlocked');
-    input.value      = '';
+    input.value = '';
     errorEl.textContent = '';
   }
 
